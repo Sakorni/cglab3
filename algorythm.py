@@ -49,7 +49,6 @@ class Booba:
         self.canvas.create_line(x1, y1, x2, y2,
                                 fill=self.active_color[1], capstyle=tkinter.ROUND,
                                 smooth=tkinter.TRUE, splinesteps=36, tags=['drawn'])
-        #print("Woah, line")
 
     def findBorder(self, x: int, y: int, step: int):
         """
@@ -85,8 +84,9 @@ class Booba:
             self._line_algorithm(i, y-1, drawer)
             i += 1
 
-    def set_pixel(self, x: int, y: int):
-        self.canvas.create_rectangle((x, y)*2, outline=self.active_color[1],
+    def set_pixel(self, x: int, y: int, b: float = 1.0):
+        color = [round(self.active_color[0][i] * b) for i in range(3)]
+        self.canvas.create_rectangle((x, y)*2, fill=_color_from_rgb(color), outline="",
                                      tags=['drawn', 'line_point'],
                                      )
 
@@ -154,11 +154,35 @@ class Booba:
             t += 1
             self.set_pixel(x, y)
 
+    def vu_line(self, color, x1=0, y1=0, x2=0, y2=0):
+        self.active_color = color
+        self.set_pixel(x1, y1, 1.0)
+        dx = x2 - x1
+        dy = y2 - y1
+
+        sign_x = self._define_sign(dx)
+
+        dx *= sign_x
+
+        if dx == 0 or dy == 0:
+            self.drawLine(x1, y1, x2, y2)
+            return
+        else:
+            gradient = dy / dx
+
+        y = y1 + gradient
+        x = x1 + 1
+        while (x <= x2 - 1):
+            y_frac = y % 1  # fractional part of a number
+            self.set_pixel(x, int(y), 1.0 - y_frac)
+            self.set_pixel(x, int(y) + 1, y_frac)
+            y += gradient
+            x += sign_x
+            i += 1
+
     def _1b(self, x, y):
         drawer = FancyDrawer("texture.jpg", self.canvas)
         self.empty_color = self.get_color(x, y)
-        # if(self.active_color[1] == self.empty_color):
-        #     return
         self._line_algorithm(x, y, drawer)
         self.empty_color = None
 
@@ -185,7 +209,7 @@ class FancyDrawer:
             if self._posy >= len(self.image[self._posx]):
                 self._posy = 0
             color = _color_from_rgb(self.image[self._posx][self._posy])
-            self.canvas.create_rectangle((x1, y1)*2, outline=color,
+            self.canvas.create_rectangle((x1, y1)*2, fill=color, outline="",
                                          tags=['drawn'],
                                          )
             self._posx += 1

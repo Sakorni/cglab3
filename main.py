@@ -25,25 +25,29 @@ class Paint(object):
             self.root, text='fill with img', command=self.fill_with_img_mode)
         self.fill_file_button.grid(row=0, column=2)
 
-        self.line_button = Button(
-            self.root, text='line', command=self.line_mode)
-        self.line_button.grid(row=0, column=3)
+        self.br_line_button = Button(
+            self.root, text='Bresenham line', command=self.br_line_mode)
+        self.br_line_button.grid(row=0, column=3)
+
+        self.vu_line_button = Button(
+            self.root, text='VU line', command=self.vu_line_mode)
+        self.vu_line_button.grid(row=0, column=4)
 
         self.color_button = Button(
             self.root, text='color', command=self.choose_color)
-        self.color_button.grid(row=0, column=4)
+        self.color_button.grid(row=0, column=5)
 
         self.reset_button = Button(
             self.root, text='clear', command=self.clear_canvas)
-        self.reset_button.grid(row=0, column=5)
+        self.reset_button.grid(row=0, column=6)
 
         self.choose_size_button = Scale(
             self.root, from_=1, to=10, orient=HORIZONTAL)
-        self.choose_size_button.grid(row=0, column=6)
+        self.choose_size_button.grid(row=0, column=7)
 
         self.c = Canvas(self.root, bg='white',
                         width=self.W_SIZE, height=self.W_SIZE)
-        self.c.grid(row=1, columnspan=7)
+        self.c.grid(row=1, columnspan=8)
 
         self.setup()
         self.root.mainloop()
@@ -72,12 +76,18 @@ class Paint(object):
         self.activate_button(self.fill_file_button)
         self.mode = 2
 
-    def line_mode(self):
-        self.activate_button(self.line_button)
+    def br_line_mode(self):
+        self.activate_button(self.br_line_button)
         self.mode = 3
 
+    def vu_line_mode(self):
+        self.activate_button(self.vu_line_button)
+        self.mode = 4
+
     def choose_color(self):
-        self.color = askcolor(color=self.color[1])
+        c = askcolor(color=self.color[1])
+        if not (c[0] is None):
+            self.color = c
 
     def activate_button(self, btn_to_act):
         self.active_button.config(relief=RAISED)
@@ -103,7 +113,7 @@ class Paint(object):
             self.filler._1b(event.x, event.y)
             return
 
-        if self.mode == 3:
+        if self.mode == 3 or self.mode == 4:
             points = self.c.find_withtag("point")
             if len(points) == 0:
                 self.c.create_oval(event.x, event.y, event.x + 5.0, event.y + 5.0,
