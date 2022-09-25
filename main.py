@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.colorchooser import askcolor
-import turtle
+from algorythm import Booba
 
 
 class Paint(object):
@@ -8,6 +8,7 @@ class Paint(object):
     DEFAULT_PEN_SIZE = 5.0
     DEFAULT_COLOR = 'black'
     W_SIZE = 600
+    fill_mode = False
 
     def __init__(self):
         self.root = Tk()
@@ -42,12 +43,15 @@ class Paint(object):
         self.active_button = self.pen_button
         self.c.bind('<B1-Motion>', self.paint)
         self.c.bind('<ButtonRelease-1>', self.reset)
+        self.filler = Booba(self.c)
 
     def use_pen(self):
         self.activate_button(self.pen_button)
 
     def choose_color(self):
-        self.color = askcolor(color=self.color)[1]
+        whoAsked = askcolor(color=self.color)
+        self.filling_color = whoAsked[0]
+        self.fill_mode = True
 
     def activate_button(self, btn_to_act):
         self.active_button.config(relief=RAISED)
@@ -55,6 +59,9 @@ class Paint(object):
         self.active_button = btn_to_act
 
     def paint(self, event):
+        if (self.fill_mode):
+            self.filler.fill(event.x, event.y, self.filling_color)
+            self.fill_mode = False
         self.line_width = self.choose_size_button.get()
         if self.old_x and self.old_y:
             self.c.create_line(self.old_x, self.old_y, event.x, event.y,
@@ -67,30 +74,6 @@ class Paint(object):
     def reset(self, event):
         self.old_x, self.old_y = None, None
         self.c.delete('line')
-
-    def get_pixel_color(x, y):
-        y = -y
-
-        # get access to tkinter.Canvas
-        canvas = turtle.getcanvas()
-
-        # find IDs of all objects in rectangle (x, y, x, y)
-        ids = canvas.find_overlapping(x, y, x, y)
-
-        # if found objects
-        if ids:
-            # get ID of last object (top most)
-            index = ids[-1]
-
-            # get its color
-            color = canvas.itemcget(index, "fill")
-
-            # if it has color then return it
-            if color:
-                return color
-
-        # if there was no object then return "white" - background color in turtle
-        return "white"  # default color
 
 
 if __name__ == '__main__':
