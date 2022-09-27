@@ -14,23 +14,23 @@ class Paint(object):
     def __init__(self):
         self.root = Tk()
 
-        self.pen_button = Button(self.root, text='pen', command=self.pen_mode)
+        self.pen_button = Button(self.root, text='pen', command=lambda: self.set_mode(0))
         self.pen_button.grid(row=0, column=0)
 
         self.fill_button = Button(
-            self.root, text='fill', command=self.fill_mode)
+            self.root, text='fill', command=lambda: self.set_mode(1))
         self.fill_button.grid(row=0, column=1)
 
         self.fill_file_button = Button(
-            self.root, text='fill with img', command=self.fill_with_img_mode)
+            self.root, text='fill with img', command=lambda: self.set_mode(2))
         self.fill_file_button.grid(row=0, column=2)
 
         self.br_line_button = Button(
-            self.root, text='Bresenham line', command=self.br_line_mode)
+            self.root, text='Bresenham line', command=lambda: self.set_mode(3))
         self.br_line_button.grid(row=0, column=3)
 
         self.vu_line_button = Button(
-            self.root, text='VU line', command=self.vu_line_mode)
+            self.root, text='VU line', command=lambda: self.set_mode(4))
         self.vu_line_button.grid(row=0, column=4)
 
         self.color_button = Button(
@@ -64,25 +64,18 @@ class Paint(object):
         self.filler = Booba(self.c, self.DEFAULT_CANVAS_COLOR[1])
         self.mode = None
 
-    def pen_mode(self):
-        self.activate_button(self.pen_button)
-        self.mode = 0
-
-    def fill_mode(self):
-        self.activate_button(self.fill_button)
-        self.mode = 1
-
-    def fill_with_img_mode(self):
-        self.activate_button(self.fill_file_button)
-        self.mode = 2
-
-    def br_line_mode(self):
-        self.activate_button(self.br_line_button)
-        self.mode = 3
-
-    def vu_line_mode(self):
-        self.activate_button(self.vu_line_button)
-        self.mode = 4
+    def set_mode(self, n):
+        self.mode = n
+        if n == 0:
+            self.activate_button(self.pen_button)
+        elif n == 1:
+            self.activate_button(self.fill_button)
+        elif n == 2:
+            self.activate_button(self.fill_file_button)
+        elif n == 3:
+            self.activate_button(self.br_line_button)
+        else:
+            self.activate_button(self.vu_line_button)
 
     def choose_color(self):
         c = askcolor(color=self.color[1])
@@ -107,10 +100,10 @@ class Paint(object):
 
     def on_press(self, event):
         if self.mode == 1:
-            self.filler.fill(event.x, event.y, self.color)
+            self.filler.fill_with_color(event.x, event.y, self.color)
             return
         if self.mode == 2:
-            self.filler._1b(event.x, event.y)
+            self.filler.fill_with_img(event.x, event.y)
             return
 
         if self.mode == 3 or self.mode == 4:
@@ -128,8 +121,12 @@ class Paint(object):
             points = self.c.find_withtag("point")
             xy1 = self.c.coords(points[0])
             xy2 = self.c.coords(points[1])
-            self.filler.bresenham_line(
-                self.color, xy1[0], xy1[1], xy2[0], xy2[1])
+            if self.mode == 3:
+                self.filler.bresenham_line(
+                    self.color, xy1[0], xy1[1], xy2[0], xy2[1])
+            else:
+                self.filler.vu_line(
+                    self.color, xy1[0], xy1[1], xy2[0], xy2[1])
 
             return
 
@@ -138,18 +135,6 @@ class Paint(object):
 
     def clear_canvas(self):
         self.c.delete('drawn')
-
-    def draw_test_square(self):
-        self.c.create_line(20, 20, 80, 20)
-        self.c.create_line(20, 20, 20, 80)
-        self.c.create_line(20, 80, 80, 80)
-        self.c.create_line(80, 20, 80, 80)
-
-    def draw_test_square(self):
-        self.c.create_line(20, 20, 80, 20)
-        self.c.create_line(20, 20, 20, 80)
-        self.c.create_line(20, 80, 80, 80)
-        self.c.create_line(80, 20, 80, 80)
 
 
 if __name__ == '__main__':
