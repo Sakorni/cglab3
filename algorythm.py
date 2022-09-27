@@ -1,23 +1,6 @@
-import numpy as np
-import tkinter
-from PIL import Image
-import math
-
-
-def _color_from_rgb(color):
-    """
-    _color_from_rgb convert color from RGB format into friendly to tkinter color
-    """
-    color = (color[0], color[1], color[2])
-    return "#%02x%02x%02x" % color
-
-# def componentToHex(color):
-#   var hex = c.toString(16); )))
-#   return hex.length == 1 ? "0" + hex : hex;
-# :
-
-# def rgbToHex(rgb):
-#     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+from os import curdir
+import enum
+from additional_classes import *
 
 
 class Booba:
@@ -25,56 +8,29 @@ class Booba:
 
     def __init__(self, canvas, canvas_color):
         self.canvas = canvas
-        self.default_color = canvas_color
-
-    def get_color(self, x, y):
-        arr = self.canvas.find_overlapping(x, y, x, y)
-        if (len(arr) == 0):
-            res = self.default_color
-        else:
-            res = self.canvas.itemcget(arr[-1], "fill")
-        return res
-
-    def isEmptyPixel(self, x, y):
-        if (x < 0 or x > self.canvas.winfo_reqwidth()):
-            return False
-        if (y < 0 or y > self.canvas.winfo_reqheight()):
-            return False
-        return self.get_color(x, y) == self.empty_color
-
-    def isEmptyTolerancePixel(self, x, y, tolerance):
-        if (x < 0 or x > self.canvas.winfo_reqwidth()):
-            return False
-        if (y < 0 or y > self.canvas.winfo_reqheight()):
-            return False
-        return abs(self.get_color(x, y) - self.empty_color) <= tolerance
+        self.color_analyzer = ColorAnalyzer(canvas, canvas_color)
 
     def findBorder(self, x: int, y: int, step: int, tolerance: int = None):
         """
         findBorder returns x of last empty pixel
         """
         x += step
-        if tolerance is None:
-            while (self.isEmptyPixel(x, y)):
-                x += step
-            self.isEmptyPixel(x, y)
-        else:
-            while (self.isEmptyTolerancePixel(x, y, tolerance)):
-                x += step
-            self.isEmptyTolerancePixel(x, y, tolerance)
+        while (self.color_analyzer.isEmptyPixel(x, y, tolerance)):
+            x += step
         x -= step
         return x
 
     def fill_with_color(self, x: int, y: int, color: tuple):
-        self.empty_color = self.get_color(x, y)
-        if (self.color == self.empty_color):
+        an_color = self.color_analyzer.get_color(x, y)
+        self.color_analyzer.set_analyzed_color(an_color)
+        if (color == an_color):
             return
         drawer = Drawer(self.canvas, color)
         self._line_algorithm(x, y, drawer)
         self.empty_color = None
 
     def _line_algorithm(self, x: int, y: int, drawer):
-        if (not self.isEmptyPixel(x, y)):
+        if (not self.color_analyzer.isEmptyPixel(x, y)):
             return
         leftBound = self.findBorder(x, y, -1)
         rightBound = self.findBorder(x, y, 1)
@@ -138,7 +94,8 @@ class Booba:
         di = 2*dl - dr
         x, y = x1, y1
         t = 0
-        drawer.set_pixel(x, y, tag='line_point')  # рисуем первую точку вне цикла
+        # рисуем первую точку вне цикла
+        drawer.set_pixel(x, y, tag='line_point')
 
         while t < last:
             if di < 0:
@@ -154,7 +111,7 @@ class Booba:
 
     def vu_line(self, color, x1=0, y1=0, x2=0, y2=0):
         drawer = Drawer(self.canvas, color)
-        drawer.set_pixel(x1, y1, 1.0)
+        drawer.set_pixel(x1, y1, 1.0, tag='line_point')
         dx = x2 - x1
         dy = y2 - y1
 
@@ -181,66 +138,110 @@ class Booba:
 
     def fill_with_img(self, x, y):
         drawer = FancyDrawer("texture.jpg", x, y, self.canvas)
-        self.empty_color = self.get_color(x, y)
+        color = self.color_analyzer.get_color(x, y)
+        self.color_analyzer.set_analyzed_color(color)
         self._line_algorithm(x, y, drawer)
-        self.empty_color = None
+        self.color_analyzer.set_analyzed_color(None)
+
+    def highlight_border(self, x, y, tolerance = (50, 50, 50)):
+        color = self.color_analyzer.get_color(x, y)
+        self.color_analyzer.set_analyzed_color(color)
+        max_point = [self.findBorder(x, y, step=1, tolerance=tolerance) + 1, y]
+        if max_point[0] == -1:
+            return
+        border_list = list()
+        border_list.append(max_point)
+        next_point = max_point.copy()
+        guard = BorderGuard((x, y), self.color_analyzer, tolerance)
+        while(True):
+            next_point = guard.next_point(next_point)
+            if next_point is None:
+                return
+            if next_point == max_point:
+                break
+            border_list.append(next_point)
+        color = ((1, 0, 0), 'red')
+        drawer = Drawer(self.canvas, color)
+        for i in range(len(border_list)):
+            drawer.set_pixel(border_list[i][0], border_list[i][1])
+
+        self.color_analyzer.set_analyzed_color(None)
+
+    # def _get_interpolated_line(start_color: tuple, end_color: tuple, coef: int) -> 'tuple[int]':
+    #     res = list()
+    #     adder = [0.0,0.0,0.0]
+    #     for i in range(3):
+    #         adder[i] = (end_color[i] - start_color[i]) / (coef - 1)
+
+    #     color = [0.0,0.0,0.0]
+    #     for i in range(coef):
+    #         for j in range(3):
+    #             color[j] = start_color[j] + adder[j] * i
+    #         res.append(color.copy())
+
+    #     return res
+
+    # def colorize_triangle(p1, p2, p3):
+    #     points = [p1,p2,p3].sort(key=lambda x: x[1])
 
 
+class Direction(enum.IntEnum):
+    right = 0
+    up_right = 1
+    up = 2
+    up_left = 3
+    left = 4
+    down_left = 5
+    down = 6
+    down_right = 7
 
-class Drawer:
-    def __init__(self, canvas: tkinter.Canvas, color: tuple[int]):
-        self.color = color
-        self.canvas = canvas
 
-    def draw_line(self, x1: int, y1: int, x2: int, y2: int, tag: str = None):
-        """
-        drawLine draws a line from x1y1 point to x2y2 point
-        """
-        tags = ['drawn']
-        if not str is None:
-            tags.append(tag)
-        self.canvas.create_line(x1, y1, x2, y2,
-                                fill=self.color[1], capstyle=tkinter.ROUND,
-                                smooth=tkinter.TRUE, splinesteps=36, tags=tags)
+class BorderGuard:
 
-    def set_pixel(self, x: int, y: int, b: float = 1.0, tag: str = None):
-        tags = ['drawn']
-        if not str is None:
-            tags.append(tag)
-        new_color = [round(self.color[0][i] * b) for i in range(3)]
-        new_color = _color_from_rgb(new_color)
-        self.canvas.create_rectangle((x, y)*2, fill=new_color, outline=new_color,
-                                     tags=tags,
-                                     )
+    def __init__(self, start, color_analyzer, tolerance):
+        self.start = start
+        self.color_analyzer = color_analyzer
+        self.tolerance = tolerance
+        self.cur_dir = Direction.down
+        self.shift_vecs = [(1, 0),     # right
+                           (1, -1),    # up right
+                           (0, -1),    # up
+                           (-1, -1),   # up left
+                           (-1, 0),    # left
+                           (-1, 1),    # down left
+                           (0, 1),     # down
+                           (1, 1)      # down_right
+                           ]
+        self.first = True
 
-class FancyDrawer:
-    image: np.ndarray
-    _posx: int
-    _posy: int
-    canvas: tkinter.Canvas
+    def shift_point(self, point: tuple):
+        res = point.copy()
+        res[0] += self.shift_vecs[self.cur_dir.value][0]
+        res[1] += self.shift_vecs[self.cur_dir.value][1]
+        return res
 
-    def __init__(self, path: str, clicked_x: int, clicked_y: int, canv: tkinter.Canvas) -> None:
-        im = Image.open("./texture.jpg")
-        im.convert('RGB')
-        self.image = np.array(im)
-        self.x_size = len(self.image[0])
-        self.y_size = len(self.image)
-        self.img_center = (self.x_size // 2, self.y_size // 2)
-        self.clicked_x = clicked_x
-        self.clicked_y = clicked_y
-        self.canvas = canv
+    def _set_90deg_dir(self):
+        self.cur_dir = Direction((self.cur_dir.value - 2) % 8)
 
-    def set_pixel(self, x, y):
-        virt_x = x - self.clicked_x
-        virt_y = y - self.clicked_y
-        virt_x = (virt_x + self.img_center[0]) % self.x_size
-        virt_y = (virt_y + self.img_center[1]) % self.y_size
-        rgb = self.image[virt_x][virt_y]
-        color = _color_from_rgb(rgb)
-        self.canvas.create_rectangle((x, y)*2, fill=color, outline=color, tags=['drawn', 'line_point'])
+    def _set_inc_dir(self):
+        self.cur_dir = Direction((self.cur_dir.value + 1) % 8)
 
-    def draw_line(self, x1, y1, x2, y2):
-        while (x1 <= x2):
-            self.set_pixel(x1, y1)
-            x1 += 1
-        print(y1)
+    def next_point(self, point: tuple):
+        if self.first:
+            self.first = False
+            next_point = self.shift_point(point)
+            if not self.color_analyzer.isEmptyPixel(next_point[0], next_point[1],
+                                                    tolerance=self.tolerance):
+                return next_point
+
+        self._set_90deg_dir()
+        temp_dir = self.cur_dir
+        while True:
+            next_point = self.shift_point(point)
+            if not self.color_analyzer.isEmptyPixel(next_point[0], next_point[1],
+                                                    tolerance=self.tolerance):
+                return next_point
+            self._set_inc_dir()
+            if temp_dir == self.cur_dir:
+                self.cur_dir = temp_dir
+                return None
