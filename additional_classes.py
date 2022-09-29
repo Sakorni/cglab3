@@ -51,9 +51,12 @@ class ColorAnalyzer:
 
 
 class Drawer:
-    def __init__(self, canvas: tkinter.Canvas, color: tuple):
+    def __init__(self, canvas: tkinter.Canvas, color: list):
         self.color = color
         self.canvas = canvas
+
+    def set_rgb_color(self, color: list[int]):
+        self.color = tuple(color), self.color[1]
 
     def draw_line(self, x1: int, y1: int, x2: int, y2: int, tag: str = None):
         """
@@ -76,12 +79,16 @@ class Drawer:
                                      tags=tags,
                                      )
 
+    def set_colored_pixel(self, x: int, y: int, color: list[int]):
+        self.set_rgb_color(color)
+        self.set_pixel(x, y)
+
     def set_bw_pixel(self, x: int, y: int, b: float = 1.0, tag: str = None):
         tags = ['drawn']
         if not tag is None:
             tags.append(tag)
         new_color = round(255 * b)
-        new_color = color_from_rgb((new_color,new_color,new_color))
+        new_color = color_from_rgb((new_color, new_color, new_color))
         self.canvas.create_rectangle((x, y)*2, fill=new_color, outline=new_color,
                                      tags=tags,
                                      )

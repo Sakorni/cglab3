@@ -1,16 +1,24 @@
 from tkinter import *
 from tkinter.colorchooser import askcolor
+from additional_classes import Drawer
 from algorythm import Booba
+from triangle_algorythm import TriangleAlgorythm, TriangleVert
 
 
 class Paint(object):
     DEFAULT_CANVAS_COLOR = ((1.0, 1.0, 1.0), 'white')
     W_SIZE = 600
-    points = [[100, 400, 'red'], [100, 100, 'green'], [400, 400, 'blue']]
+    points = [
+        [100, 400, '#FF0000'],
+        [100, 100, '#00FF00'],
+        [500, 442, '#0000FF']]
+    point_number = 0
+    mode = 0
+    c: Canvas = None
 
     def __init__(self):
         self.root = Tk()
-
+        self.mode = 1
         self.fpoint_c_button = Button(
             self.root, text='First point color', command=lambda: self.choose_color(0))
         self.fpoint_c_button.grid(row=0, column=0)
@@ -24,7 +32,7 @@ class Paint(object):
         self.tpoint_c_button.grid(row=0, column=2)
 
         self.draw_button = Button(
-            self.root, text='Draw', command=self.draw())
+            self.root, text='Draw', command=lambda: self.draw())
         self.draw_button.grid(row=0, column=3)
 
         self.c = Canvas(self.root, bg='white',
@@ -40,6 +48,7 @@ class Paint(object):
         self.c.bind('<ButtonRelease-1>', self.reset)
         self.filler = Booba(self.c, self.DEFAULT_CANVAS_COLOR[1])
         self.draw_points()
+        # self.draw()
 
     def choose_color(self, point_n):
         c = askcolor(color=self.points[point_n][2])
@@ -73,50 +82,29 @@ class Paint(object):
 
     def on_press(self, event):
         if self.mode == 1:
-            self.filler.fill(event.x, event.y, self.color)
+            self.set_point(event.x, event.y)
             return
         if self.mode == 2:
             self.filler._1b(event.x, event.y)
             return
 
-        if self.mode == 3 or self.mode == 4:
-            points = self.c.find_withtag("point")
-            if len(points) == 0:
-                self.c.create_oval(event.x, event.y, event.x + 5.0, event.y + 5.0,
-                                   fill=self.color[1], tags=['drawn', 'point'])
-                return
-            if len(points) == 2:
-                self.c.delete(points[0])
-                self.c.delete("line_point")
-
-            self.c.create_oval(event.x, event.y, event.x + 5.0, event.y + 5.0,
-                               fill=self.color[1], tags=['drawn', 'point'])
-            points = self.c.find_withtag("point")
-            xy1 = self.c.coords(points[0])
-            xy2 = self.c.coords(points[1])
-            if self.mode == 3:
-                self.filler.bresenham_line(
-                    self.color, xy1[0], xy1[1], xy2[0], xy2[1])
-            else:
-                self.filler.vu_line(
-                    self.color, xy1[0], xy1[1], xy2[0], xy2[1])
-
-            return
+    def set_point(self, x, y):
+        point = self.points[self.point_number]
+        self.points[self.point_number] = [x, y, point[2]]
+        self.point_number = (self.point_number + 1) % 3
+        self.clear_canvas()
+        self.draw_points()
 
     def draw(self):
-        print('a')
+        alg = TriangleAlgorythm(self.points, Drawer(
+            self.c, self.DEFAULT_CANVAS_COLOR))
+        alg.do_the_trick()
 
     def reset(self, event):
         self.old_x, self.old_y = None, None
 
     def clear_canvas(self):
-        self.c.delete('drawn')
-
-    def draw_test_square(self):
-        self.c.create_line(20, 20, 80, 20)
-        self.c.create_line(20, 20, 20, 80)
-        self.c.create_line(20, 80, 80, 80)
-        self.c.create_line(80, 20, 80, 80)
+        self.c.delete('all')
 
 
 if __name__ == '__main__':
