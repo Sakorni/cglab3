@@ -116,12 +116,15 @@ class TriangleAlgorythm():
         """
         res = []
         steps = [0, 0, 0]
+        for i in range(len(color1)):
+            delim = (1.0*seed - 1)
+            if delim == 0:
+                delim = 1
+            steps[i] = round(color2[i] + (color1[i]-color2[i]) / delim)
         for i in range(seed):
             color = []
-            coef = i/seed
             for j in range(len(color1)):
-                color.append(
-                    abs(int(color2[j]*coef + color1[j]*(1-coef))) % 256)
+                color.append((color1[j] + steps[j]*i) % 256)
             res.append(color)
         return res
 
