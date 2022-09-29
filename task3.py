@@ -10,7 +10,7 @@ class Paint(object):
     W_SIZE = 600
     points = [
         [100, 400, '#FF0000'],
-        [100, 100, '#00FF00'],
+        [80, 100, '#00FF00'],
         [500, 442, '#0000FF']]
     point_number = 0
     mode = 0
