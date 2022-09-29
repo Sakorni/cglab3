@@ -6,8 +6,8 @@ from triangle_algorythm import TriangleAlgorythm, TriangleVert
 
 
 class Paint(object):
-    DEFAULT_CANVAS_COLOR = ((1.0, 1.0, 1.0), 'white')
-    W_SIZE = 600
+    DEFAULT_CANVAS_COLOR = ((255, 255, 255), '#ffffff')
+    W_SIZE = 550
     points = [
         [100, 400, '#FF0000'],
         [80, 100, '#00FF00'],
@@ -38,6 +38,12 @@ class Paint(object):
         self.c = Canvas(self.root, bg='white',
                         width=self.W_SIZE, height=self.W_SIZE)
         self.c.grid(row=1, columnspan=4)
+        self.img = PhotoImage(width=self.W_SIZE, height=self.W_SIZE)
+        self.c.create_image((self.W_SIZE/2, self.W_SIZE/2), image=self.img,
+                            state='normal')
+        self.drawer = Drawer(self.img, self.DEFAULT_CANVAS_COLOR)
+        for y in range(self.W_SIZE):
+            self.drawer.draw_line(0, self.W_SIZE, y)
 
         self.setup()
         self.root.mainloop()
@@ -46,7 +52,7 @@ class Paint(object):
         self.c.bind('<B1-Motion>', self.on_motion)
         self.c.bind('<ButtonPress-1>', self.on_press)
         self.c.bind('<ButtonRelease-1>', self.reset)
-        self.filler = Booba(self.c, self.DEFAULT_CANVAS_COLOR[1])
+        self.filler = Booba(self.img, self.DEFAULT_CANVAS_COLOR[1])
         self.draw_points()
         # self.draw()
 
@@ -96,8 +102,7 @@ class Paint(object):
         self.draw_points()
 
     def draw(self):
-        alg = TriangleAlgorythm(self.points, Drawer(
-            self.c, self.DEFAULT_CANVAS_COLOR))
+        alg = TriangleAlgorythm(self.points, self.drawer)
         alg.do_the_trick()
 
     def reset(self, event):

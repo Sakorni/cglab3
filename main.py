@@ -1,84 +1,89 @@
 from tkinter import *
 from tkinter.colorchooser import askcolor
 from algorythm import Booba
+import os
+from additional_classes import Drawer
 
 
 class Paint(object):
 
     DEFAULT_PEN_SIZE = 5.0
-    DEFAULT_PEN_COLOR = ((0.0, 0.0, 0.0), '#000000')
-    DEFAULT_CANVAS_COLOR = ((1.0, 1.0, 1.0), '#ffffff')
-    W_SIZE = 600
+    DEFAULT_PEN_COLOR = ((0, 0, 0), '#000000')
+    DEFAULT_CANVAS_COLOR = ((255, 255, 255), '#ffffff')
+    W_SIZE = 425
     fill_mode = False
+    points = []
 
     def __init__(self):
         self.root = Tk()
-
-        self.pen_button = Button(
-            self.root, text='pen', command=lambda: self.set_mode(0))
-        self.pen_button.grid(row=0, column=0)
+        self.root.configure(bg=self.DEFAULT_CANVAS_COLOR[1])
 
         self.fill_button = Button(
             self.root, text='fill', command=lambda: self.set_mode(1))
-        self.fill_button.grid(row=0, column=1)
+        self.fill_button.grid(row=0, column=0)
 
         self.fill_file_button = Button(
             self.root, text='fill with img', command=lambda: self.set_mode(2))
-        self.fill_file_button.grid(row=0, column=2)
+        self.fill_file_button.grid(row=0, column=1)
 
         self.highlight_border_btn = Button(
-            self.root, text='Highlight border', command=lambda: self.set_mode(3))
-        self.highlight_border_btn.grid(row=0, column=3)
+            self.root, text='highlight border', command=lambda: self.set_mode(3))
+        self.highlight_border_btn.grid(row=0, column=2)
 
         self.br_line_button = Button(
             self.root, text='Bresenham line', command=lambda: self.set_mode(4))
-        self.br_line_button.grid(row=0, column=4)
+        self.br_line_button.grid(row=0, column=3)
 
         self.vu_line_button = Button(
-            self.root, text='VU line', command=lambda: self.set_mode(5))
-        self.vu_line_button.grid(row=0, column=5)
+            self.root, text='WU line', command=lambda: self.set_mode(5))
+        self.vu_line_button.grid(row=0, column=4)
 
         self.color_button = Button(
             self.root, text='color', command=self.choose_color)
-        self.color_button.grid(row=0, column=6)
+        self.color_button.grid(row=0, column=5)
 
         self.reset_button = Button(
             self.root, text='clear', command=self.clear_canvas)
-        self.reset_button.grid(row=0, column=7)
-
-        self.choose_size_button = Scale(
-            self.root, from_=1, to=10, orient=HORIZONTAL)
-        self.choose_size_button.grid(row=0, column=8)
+        self.reset_button.grid(row=0, column=6)
 
         self.c = Canvas(self.root, bg='#ffffff',
                         width=self.W_SIZE, height=self.W_SIZE)
-        self.c.grid(row=1, columnspan=9)
+        self.c.grid(row=1, columnspan=7)
 
         # Максим заложил противопехотную мину
         # self.img = PhotoImage(width=self.W_SIZE, height=self.W_SIZE)
         # self.c.create_image((self.W_SIZE/2, self.W_SIZE/2), image=self.img,
         #                     state='normal', tags=['canvas'])
 
+        # Все в порядке я разминировал
+        # if not os.path.exists('canvas.png'):
+        self.img = PhotoImage(width=self.W_SIZE, height=self.W_SIZE)
+        self.c.create_image((self.W_SIZE/2, self.W_SIZE/2), image=self.img,
+                            state='normal')
+        drawer = Drawer(self.img, self.DEFAULT_CANVAS_COLOR)
+        for y in range(self.W_SIZE):
+            drawer.draw_line(0, self.W_SIZE, y)
+            # self.img.write('canvas.png', format='png')
+        # else:
+        #     self.img = PhotoImage(
+        #         'canvas.png', width=self.W_SIZE, height=self.W_SIZE)
+        #     self.c.create_image((self.W_SIZE/2, self.W_SIZE/2), image=self.img,
+        #                         state='normal')
+
         self.setup()
         self.root.mainloop()
 
     def setup(self):
-        self.old_x = None
-        self.old_y = None
-        self.line_width = self.choose_size_button.get()
         self.color = self.DEFAULT_PEN_COLOR
-        self.active_button = self.pen_button
-        self.c.bind('<B1-Motion>', self.on_motion)
+        self.active_button = self.br_line_button
+        self.activate_button(self.active_button)
         self.c.bind('<ButtonPress-1>', self.on_press)
-        self.c.bind('<ButtonRelease-1>', self.reset)
-        self.filler = Booba(self.c, self.DEFAULT_CANVAS_COLOR[1])
-        self.mode = None
+        self.filler = Booba(self.img, self.DEFAULT_CANVAS_COLOR[1])
+        self.mode = 4
 
     def set_mode(self, n):
         self.mode = n
-        if n == 0:
-            self.activate_button(self.pen_button)
-        elif n == 1:
+        if n == 1:
             self.activate_button(self.fill_button)
         elif n == 2:
             self.activate_button(self.fill_file_button)
@@ -99,17 +104,6 @@ class Paint(object):
         btn_to_act.config(relief=SUNKEN)
         self.active_button = btn_to_act
 
-    def on_motion(self, event):
-        if self.mode == 0:
-            self.line_width = self.choose_size_button.get()
-            if self.old_x and self.old_y:
-                self.c.create_line(self.old_x, self.old_y, event.x, event.y,
-                                   width=self.line_width, fill=self.color[1],
-                                   capstyle=ROUND, smooth=TRUE, splinesteps=36, tags=['drawn'])
-
-            self.old_x = event.x
-            self.old_y = event.y
-
     def on_press(self, event):
         if self.mode == 1:
             self.filler.fill_with_color(event.x, event.y, self.color)
@@ -124,20 +118,24 @@ class Paint(object):
             return
 
         if self.mode == 4 or self.mode == 5:
-            points = self.c.find_withtag("point")
-            if len(points) == 0:
-                self.c.create_oval(event.x, event.y, event.x + 5.0, event.y + 5.0,
-                                   fill=self.color[1], tags=['drawn', 'point'])
+            drawer = Drawer(self.img, self.color)
+            if len(self.points) == 0:
+                self.points.append((event.x, event.y))
+                drawer.set_pixel(event.x, event.y)
                 return
-            if len(points) == 2:
-                self.c.delete(points[0])
-                self.c.delete("line_point")
 
-            self.c.create_oval(event.x, event.y, event.x + 5.0, event.y + 5.0,
-                               fill=self.color[1], tags=['drawn', 'point'])
-            points = self.c.find_withtag("point")
-            xy1 = self.c.coords(points[0])
-            xy2 = self.c.coords(points[1])
+            if len(self.points) == 2:
+                self.points = []
+                self.points.append((event.x, event.y))
+                drawer.set_pixel(event.x, event.y)
+                return
+
+            # self.c.create_oval(event.x, event.y, event.x + 5.0, event.y + 5.0,
+            #                    fill=self.color[1], tags=['drawn', 'point'])
+            self.points.append((event.x, event.y))
+            drawer.set_pixel(event.x, event.y)
+            xy1 = self.points[0]
+            xy2 = self.points[1]
             if self.mode == 4:
                 self.filler.bresenham_line(
                     self.color, xy1[0], xy1[1], xy2[0], xy2[1])
@@ -159,11 +157,10 @@ class Paint(object):
         self.c.create_line(
             points[2], points[3], width=self.line_width, fill='#000000', tags=['drawn'])
 
-    def reset(self, event):
-        self.old_x, self.old_y = None, None
-
     def clear_canvas(self):
-        self.c.delete('drawn')
+        drawer = Drawer(self.img, self.DEFAULT_CANVAS_COLOR)
+        for y in range(self.W_SIZE):
+            drawer.draw_line(0, self.W_SIZE, y)
 
 
 if __name__ == '__main__':

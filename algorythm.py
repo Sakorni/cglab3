@@ -34,7 +34,7 @@ class Booba:
             return
         leftBound = self.findBorder(x, y, -1)
         rightBound = self.findBorder(x, y, 1)
-        drawer.draw_line(leftBound, y, rightBound + 1, y)
+        drawer.draw_line(leftBound, rightBound + 1, y)
         i = leftBound
         while (i <= rightBound):
             self._line_algorithm(i, y+1, drawer)
@@ -89,7 +89,7 @@ class Booba:
         x, y = x1, y1
         t = 0
         # рисуем первую точку вне цикла
-        drawer.set_pixel(x, y, tag='line_point')
+        drawer.set_pixel(x, y)
 
         while t < last:
             if di < 0:
@@ -101,60 +101,12 @@ class Booba:
             x += x_addr2
             y += y_addr2
             t += 1
-            drawer.set_pixel(x, y, tag='line_point')
-
-    def right_wu_line(self, color, x1=0, y1=0, x2=0, y2=0):
-        drawer = Drawer(self.canvas, ((255, 255, 255), '#ffffff'))
-        dx = x2 - x1  # смещение по x
-        dy = y2 - y1  # смещение по y
-
-        sign_x = self._define_sign(dx)
-        sign_y = self._define_sign(dy)
-
-        # эквивалент модулю. Мы уже знаем знаки, так что нам не надо их снова вычислять
-        dx *= sign_x
-        dy *= sign_y
-        dl = 0
-        dr = 0
-        x_addr1, x_addr2, y_addr1, y_addr2 = 0, 0, 0, 0
-        if dx == 0:
-            gradient = dy
-        else:
-            gradient = dy/dx
-
-        if gradient <= 1:
-            dl, dr = dy, dx
-            x_addr2, y_addr1 = sign_x, sign_y
-            #pdx, pdy = sign_x, 0
-            last = dx
-        elif gradient > 1:
-            dl, dr = dx, dy
-            x_addr1, y_addr2 = sign_x, sign_y
-            #pdx, pdy = 0, sign_y
-            last = dy
-
-        di = 2*dl - dr
-        x, y = x1, y1
-        t = 0
-        # рисуем первую точку вне цикла
-        drawer.set_pixel(x, y, tag='line_point')
-        while t < last:
-            if di < 0:
-                di += 2*dl
-            else:
-                y += y_addr1
-                x += x_addr1
-                di += 2*(dl-dr)
-            x += x_addr2
-            y += y_addr2
-            t += 1
-            y_frac = y % 1
-            drawer.set_pixel(x, y, b=1.0 - y_frac, tag='line_point')
-            drawer.set_pixel(x + abs(x_addr1), y + abs(y_addr1),
-                             b=y_frac, tag='line_point')
+            drawer.set_pixel(x, y)
 
     def ultraright_wu_line(self, color: tuple[tuple[int], str], x1: int, y1: int, x2: int, y2: int) -> None:
-        drawer = Drawer(self.canvas, color)
+        self.color_analyzer.set_analyzed_color(color)
+        new_color = self.color_analyzer.get_inverted_color()
+        drawer = Drawer(self.canvas, new_color)
         dx = x2 - x1
         dy = y2 - y1
         y_domination = abs(dy) > abs(dx)
@@ -173,56 +125,15 @@ class Booba:
         if (y_domination):
             for i in range(round(dx)):
                 drawer.set_pixel(round(y), x, y % 1)
-                drawer.set_pixel(round(y)-sign_y, x, y % 1)
+                drawer.set_pixel(round(y)-sign_y, x, 1 - y % 1)
                 y += gradient
                 x += sign_x
         else:
             for i in range(round(dx)):
                 drawer.set_pixel(x, round(y), y % 1)
-                drawer.set_pixel(x, round(y)-sign_y, y % 1)
+                drawer.set_pixel(x, round(y)-sign_y, 1 - y % 1)
                 y += gradient
                 x += sign_x
-
-    def vu_line(self, color, x1=0, y1=0, x2=0, y2=0):
-        drawer = Drawer(self.canvas, color)
-        drawer.set_pixel(x1, y1, 1.0, tag='line_point')
-        dx = x2 - x1
-        dy = y2 - y1
-
-        sign_x = self._define_sign(dx)
-        sign_y = self._define_sign(dy)
-
-        dx *= sign_x
-
-        if dx == 0 or dy == 0:
-            drawer.draw_line(x1, y1, x2, y2, 'line_point')
-            return
-        else:
-            gradient = dy / dx
-        angle = abs(y2 - y1) > abs(x2 - x1)
-        i = 0
-        if not angle:
-            y = y1 + gradient
-            x = x1 + sign_x
-            while (i < dx):
-                y_frac = y % 1  # fractional part of a number
-                drawer.set_pixel(x, round(y),     b=1.0 -
-                                 y_frac, tag='line_point')
-                drawer.set_pixel(x, round(y) + 1, b=y_frac, tag='line_point')
-                y += gradient
-                x += sign_x
-                i += 1
-        else:
-            y = y1 + sign_y
-            x = x1 + gradient
-            while (i < dx):
-                x_frac = x % 1  # fractional part of a number
-                drawer.set_pixel(round(x),     y, b=1.0 -
-                                 x_frac, tag='line_point')
-                drawer.set_pixel(round(x) + 1, y, b=x_frac, tag='line_point')
-                x += gradient
-                y += sign_y
-                i += 1
 
     def fill_with_img(self, x, y):
         drawer = FancyDrawer("texture.jpg", x, y, self.canvas)
