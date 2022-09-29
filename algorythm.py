@@ -54,7 +54,7 @@ class Booba:
         if d < 0:
             return -1
         return 0
-    
+
     def bresenham_line(self, color, x1=0, y1=0, x2=0, y2=0):
         drawer = Drawer(self.canvas, color)
         dx = x2 - x1  # смещение по x
@@ -104,7 +104,7 @@ class Booba:
             drawer.set_pixel(x, y, tag='line_point')
 
     def right_wu_line(self, color, x1=0, y1=0, x2=0, y2=0):
-        drawer = Drawer(self.canvas, ((255,255,255),'#ffffff'))
+        drawer = Drawer(self.canvas, ((255, 255, 255), '#ffffff'))
         dx = x2 - x1  # смещение по x
         dy = y2 - y1  # смещение по y
 
@@ -138,7 +138,6 @@ class Booba:
         t = 0
         # рисуем первую точку вне цикла
         drawer.set_pixel(x, y, tag='line_point')
-        virt_y = y
         while t < last:
             if di < 0:
                 di += 2*dl
@@ -153,6 +152,36 @@ class Booba:
             drawer.set_pixel(x, y, b=1.0 - y_frac, tag='line_point')
             drawer.set_pixel(x + abs(x_addr1), y + abs(y_addr1),
                              b=y_frac, tag='line_point')
+
+    def ultraright_wu_line(self, color: tuple[tuple[int], str], x1: int, y1: int, x2: int, y2: int) -> None:
+        drawer = Drawer(self.canvas, color)
+        dx = x2 - x1
+        dy = y2 - y1
+        y_domination = abs(dy) > abs(dx)
+        if y_domination:
+            x1, y1 = y1, x1
+            x2, y2 = y2, x2
+            dx, dy = dy, dx
+        sign_x = self._define_sign(dx)
+        sign_y = self._define_sign(dy)
+        dx *= sign_x
+        gradient = 1.0
+        if dx != 0:
+            gradient = dy/dx
+        y = float(y1)
+        x = x1
+        if (y_domination):
+            for i in range(round(dx)):
+                drawer.set_pixel(round(y), x, y % 1)
+                drawer.set_pixel(round(y)-sign_y, x, y % 1)
+                y += gradient
+                x += sign_x
+        else:
+            for i in range(round(dx)):
+                drawer.set_pixel(x, round(y), y % 1)
+                drawer.set_pixel(x, round(y)-sign_y, y % 1)
+                y += gradient
+                x += sign_x
 
     def vu_line(self, color, x1=0, y1=0, x2=0, y2=0):
         drawer = Drawer(self.canvas, color)
@@ -192,7 +221,7 @@ class Booba:
                                  x_frac, tag='line_point')
                 drawer.set_pixel(round(x) + 1, y, b=x_frac, tag='line_point')
                 x += gradient
-                y += sign_x
+                y += sign_y
                 i += 1
 
     def fill_with_img(self, x, y):
@@ -212,7 +241,7 @@ class Booba:
         border_list.append(max_point)
         next_point = max_point.copy()
         guard = BorderGuard((x, y), self.color_analyzer, tolerance)
-        while(True):
+        while (True):
             next_point = guard.next_point(next_point)
             if next_point is None:
                 return

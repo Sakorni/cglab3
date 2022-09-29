@@ -54,9 +54,10 @@ class Paint(object):
                         width=self.W_SIZE, height=self.W_SIZE)
         self.c.grid(row=1, columnspan=9)
 
-        self.img = PhotoImage(width=self.W_SIZE, height=self.W_SIZE)
-        self.c.create_image((self.W_SIZE/2, self.W_SIZE/2), image=self.img, 
-                            state='normal', tags=['canvas'])
+        # Максим заложил противопехотную мину
+        # self.img = PhotoImage(width=self.W_SIZE, height=self.W_SIZE)
+        # self.c.create_image((self.W_SIZE/2, self.W_SIZE/2), image=self.img,
+        #                     state='normal', tags=['canvas'])
 
         self.setup()
         self.root.mainloop()
@@ -141,7 +142,7 @@ class Paint(object):
                 self.filler.bresenham_line(
                     self.color, xy1[0], xy1[1], xy2[0], xy2[1])
             else:
-                self.filler.right_wu_line(
+                self.filler.ultraright_wu_line(
                     self.color, xy1[0], xy1[1], xy2[0], xy2[1])
 
             return
