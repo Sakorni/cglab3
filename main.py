@@ -1,7 +1,8 @@
 from tkinter import *
 from tkinter.colorchooser import askcolor
 from algorythm import Booba
-
+from additional_classes import Drawer
+import os.path
 
 class Paint(object):
 
@@ -14,7 +15,8 @@ class Paint(object):
     def __init__(self):
         self.root = Tk()
 
-        self.pen_button = Button(self.root, text='pen', command=lambda: self.set_mode(0))
+        self.pen_button = Button(
+            self.root, text='pen', command=lambda: self.set_mode(0))
         self.pen_button.grid(row=0, column=0)
 
         self.fill_button = Button(
@@ -53,6 +55,21 @@ class Paint(object):
                         width=self.W_SIZE, height=self.W_SIZE)
         self.c.grid(row=1, columnspan=9)
 
+        if not os.path.exists('canvas.png'):
+            self.img =  PhotoImage(width=self.W_SIZE, height=self.W_SIZE)
+            self.c.create_image((self.W_SIZE/2, self.W_SIZE/2), image=self.img,
+                                state='normal')
+            drawer = Drawer(self.c, self.img, self.DEFAULT_CANVAS_COLOR)
+            for y in range(self.W_SIZE):
+                drawer.draw_line(0, y, self.W_SIZE, y)
+            self.img.write('canvas.png', 'png')
+        else:
+            self.img = PhotoImage('canvas.png',
+                width=self.W_SIZE, height=self.W_SIZE)
+            self.c.create_image((self.W_SIZE/2, self.W_SIZE/2), image=self.img,
+                                state='normal')
+
+
         self.setup()
         self.root.mainloop()
 
@@ -65,7 +82,7 @@ class Paint(object):
         self.c.bind('<B1-Motion>', self.on_motion)
         self.c.bind('<ButtonPress-1>', self.on_press)
         self.c.bind('<ButtonRelease-1>', self.reset)
-        self.filler = Booba(self.c, self.DEFAULT_CANVAS_COLOR[1])
+        self.filler = Booba(self.c, self.img, self.DEFAULT_CANVAS_COLOR[1])
         self.mode = None
         self.create_square()
 
@@ -98,9 +115,7 @@ class Paint(object):
         if self.mode == 0:
             self.line_width = self.choose_size_button.get()
             if self.old_x and self.old_y:
-                self.c.create_line(self.old_x, self.old_y, event.x, event.y,
-                                   width=self.line_width, fill=self.color[1],
-                                   capstyle=ROUND, smooth=TRUE, splinesteps=36, tags=['drawn'])
+                self.filler.bresenham_line(self.color, self.old_x, self.old_y, event.x, event.y,)
 
             self.old_x = event.x
             self.old_y = event.y
@@ -114,7 +129,8 @@ class Paint(object):
             return
 
         if self.mode == 3:
-            self.filler.highlight_border(event.x, event.y)
+            self.filler.highlight_border(
+                event.x, event.y, highlight_color=self.color)
             return
 
         if self.mode == 4 or self.mode == 5:
@@ -136,25 +152,32 @@ class Paint(object):
                 self.filler.bresenham_line(
                     self.color, xy1[0], xy1[1], xy2[0], xy2[1])
             else:
-                self.filler.vu_line(
+                self.filler.right_wu_line(
                     self.color, xy1[0], xy1[1], xy2[0], xy2[1])
 
             return
 
     def create_square(self):
+        drawer = Drawer(self.c, self.img, self.color)
+        for i in range(20):
+            drawer.set_pixel(20 + i, 20)
+            drawer.set_pixel(20, 20 + i)
         self.line_width = self.choose_size_button.get()
-        points = [(20,20), (40,20), (20,40), (40,40)]
-        self.c.create_line(points[0], points[1], width=self.line_width, fill='#000000',tags=['drawn'])
-        self.c.create_line(points[0], points[2], width=self.line_width, fill='#000000',tags=['drawn'])
-        self.c.create_line(points[1], points[3], width=self.line_width, fill='#000000',tags=['drawn'])
-        self.c.create_line(points[2], points[3], width=self.line_width, fill='#000000',tags=['drawn'])
+        points = [(20, 20), (40, 20), (20, 40), (40, 40)]
+        # self.c.create_line(
+        #     points[0], points[1], width=self.line_width, fill='#000000', tags=['drawn'])
+        # self.c.create_line(
+        #     points[0], points[2], width=self.line_width, fill='#000000', tags=['drawn'])
+        # self.c.create_line(
+        #     points[1], points[3], width=self.line_width, fill='#000000', tags=['drawn'])
+        # self.c.create_line(
+        #     points[2], points[3], width=self.line_width, fill='#000000', tags=['drawn'])
 
     def reset(self, event):
         self.old_x, self.old_y = None, None
 
     def clear_canvas(self):
         self.c.delete('drawn')
-        self.create_square()
 
 
 if __name__ == '__main__':

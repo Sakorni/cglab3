@@ -6,9 +6,10 @@ from additional_classes import *
 class Booba:
     canvas = None  # That's the current canvas
 
-    def __init__(self, canvas, canvas_color):
+    def __init__(self, canvas, cimg, canvas_color):
         self.canvas = canvas
-        self.color_analyzer = ColorAnalyzer(canvas, canvas_color)
+        self.cimg = cimg
+        self.color_analyzer = ColorAnalyzer(canvas, cimg, canvas_color)
 
     def findBorder(self, x: int, y: int, step: int, tolerance: int = None):
         """
@@ -25,7 +26,7 @@ class Booba:
         self.color_analyzer.set_analyzed_color(an_color)
         if (color == an_color):
             return
-        drawer = Drawer(self.canvas, color)
+        drawer = Drawer(self.canvas, self.cimg, color)
         self._line_algorithm(x, y, drawer)
         self.empty_color = None
 
@@ -54,9 +55,9 @@ class Booba:
         if d < 0:
             return -1
         return 0
-
+    
     def bresenham_line(self, color, x1=0, y1=0, x2=0, y2=0):
-        drawer = Drawer(self.canvas, color)
+        drawer = Drawer(self.canvas, self.cimg, color)
         dx = x2 - x1  # смещение по x
         dy = y2 - y1  # смещение по y
 
@@ -75,12 +76,6 @@ class Booba:
             gradient = dy/dx
 
         if gradient <= 1:
-            """
-            Если dx > dy, то значит отрезок "вытянут" вдоль оси икс, т.е. он скорее длинный, чем высокий.
-            Значит в цикле нужно будет идти по икс (строчка el = dx;), значит "протягивать" прямую по иксу
-            надо в соответствии с тем, слева направо и справа налево она идёт (pdx = incx;), при этом
-            по y сдвиг такой отсутствует.
-            """
             dl, dr = dy, dx
             x_addr2, y_addr1 = sign_x, sign_y
             #pdx, pdy = sign_x, 0
@@ -109,13 +104,65 @@ class Booba:
             t += 1
             drawer.set_pixel(x, y, tag='line_point')
 
+    def right_wu_line(self, color, x1=0, y1=0, x2=0, y2=0):
+        drawer = Drawer(self.canvas, self.cimg, ((255,255,255),'#ffffff'))
+        dx = x2 - x1  # смещение по x
+        dy = y2 - y1  # смещение по y
+
+        sign_x = self._define_sign(dx)
+        sign_y = self._define_sign(dy)
+
+        # эквивалент модулю. Мы уже знаем знаки, так что нам не надо их снова вычислять
+        dx *= sign_x
+        dy *= sign_y
+        dl = 0
+        dr = 0
+        x_addr1, x_addr2, y_addr1, y_addr2 = 0, 0, 0, 0
+        if dx == 0:
+            gradient = dy
+        else:
+            gradient = dy/dx
+
+        if gradient <= 1:
+            dl, dr = dy, dx
+            x_addr2, y_addr1 = sign_x, sign_y
+            #pdx, pdy = sign_x, 0
+            last = dx
+        elif gradient > 1:
+            dl, dr = dx, dy
+            x_addr1, y_addr2 = sign_x, sign_y
+            #pdx, pdy = 0, sign_y
+            last = dy
+
+        di = 2*dl - dr
+        x, y = x1, y1
+        t = 0
+        # рисуем первую точку вне цикла
+        drawer.set_pixel(x, y, tag='line_point')
+        virt_y = y
+        while t < last:
+            if di < 0:
+                di += 2*dl
+            else:
+                y += y_addr1
+                x += x_addr1
+                di += 2*(dl-dr)
+            x += x_addr2
+            y += y_addr2
+            t += 1
+            y_frac = y % 1
+            drawer.set_pixel(x, y, b=1.0 - y_frac, tag='line_point')
+            drawer.set_pixel(x + abs(x_addr1), y + abs(y_addr1),
+                             b=y_frac, tag='line_point')
+
     def vu_line(self, color, x1=0, y1=0, x2=0, y2=0):
-        drawer = Drawer(self.canvas, color)
+        drawer = Drawer(self.canvas, self.cimg, color)
         drawer.set_pixel(x1, y1, 1.0, tag='line_point')
         dx = x2 - x1
         dy = y2 - y1
 
         sign_x = self._define_sign(dx)
+        sign_y = self._define_sign(dy)
 
         dx *= sign_x
 
@@ -124,26 +171,39 @@ class Booba:
             return
         else:
             gradient = dy / dx
-
-        y = y1 + gradient
-        x = x1 + sign_x
+        angle = abs(y2 - y1) > abs(x2 - x1)
         i = 0
-        while (i < dx):
-            y_frac = y % 1  # fractional part of a number
-            drawer.set_pixel(x, int(y), b=1.0 - y_frac, tag='line_point')
-            drawer.set_pixel(x, int(y) + 1, b=y_frac, tag='line_point')
-            y += gradient
-            x += sign_x
-            i += 1
+        if not angle:
+            y = y1 + gradient
+            x = x1 + sign_x
+            while (i < dx):
+                y_frac = y % 1  # fractional part of a number
+                drawer.set_pixel(x, round(y),     b=1.0 -
+                                 y_frac, tag='line_point')
+                drawer.set_pixel(x, round(y) + 1, b=y_frac, tag='line_point')
+                y += gradient
+                x += sign_x
+                i += 1
+        else:
+            y = y1 + sign_y
+            x = x1 + gradient
+            while (i < dx):
+                x_frac = x % 1  # fractional part of a number
+                drawer.set_pixel(round(x),     y, b=1.0 -
+                                 x_frac, tag='line_point')
+                drawer.set_pixel(round(x) + 1, y, b=x_frac, tag='line_point')
+                x += gradient
+                y += sign_x
+                i += 1
 
     def fill_with_img(self, x, y):
-        drawer = FancyDrawer("texture.jpg", x, y, self.canvas)
+        drawer = FancyDrawer("texture.jpg", x, y, self.canvas, self.cimg)
         color = self.color_analyzer.get_color(x, y)
         self.color_analyzer.set_analyzed_color(color)
         self._line_algorithm(x, y, drawer)
         self.color_analyzer.set_analyzed_color(None)
 
-    def highlight_border(self, x, y, tolerance = (50, 50, 50)):
+    def highlight_border(self, x, y, tolerance=(50, 50, 50), highlight_color=((0, 0, 0), '#000000')):
         color = self.color_analyzer.get_color(x, y)
         self.color_analyzer.set_analyzed_color(color)
         max_point = [self.findBorder(x, y, step=1, tolerance=tolerance) + 1, y]
@@ -160,8 +220,7 @@ class Booba:
             if next_point == max_point:
                 break
             border_list.append(next_point)
-        color = ((1, 0, 0), 'red')
-        drawer = Drawer(self.canvas, color)
+        drawer = Drawer(self.canvas, self.cimg, highlight_color)
         for i in range(len(border_list)):
             drawer.set_pixel(border_list[i][0], border_list[i][1])
 
