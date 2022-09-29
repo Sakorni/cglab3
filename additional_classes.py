@@ -76,6 +76,16 @@ class Drawer:
                                      tags=tags,
                                      )
 
+    def set_bw_pixel(self, x: int, y: int, b: float = 1.0, tag: str = None):
+        tags = ['drawn']
+        if not tag is None:
+            tags.append(tag)
+        new_color = round(255 * b)
+        new_color = color_from_rgb((new_color,new_color,new_color))
+        self.canvas.create_rectangle((x, y)*2, fill=new_color, outline=new_color,
+                                     tags=tags,
+                                     )
+
 
 class FancyDrawer:
     image: np.ndarray
