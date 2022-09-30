@@ -10,7 +10,7 @@ class Paint(object):
     DEFAULT_PEN_SIZE = 5.0
     DEFAULT_PEN_COLOR = ((0, 0, 0), '#000000')
     DEFAULT_CANVAS_COLOR = ((255, 255, 255), '#ffffff')
-    W_SIZE = 425
+    W_SIZE = 300
     fill_mode = False
     points = []
 
@@ -158,6 +158,7 @@ class Paint(object):
             points[2], points[3], width=self.line_width, fill='#000000', tags=['drawn'])
 
     def clear_canvas(self):
+        self.img.write("output.png", "png")
         drawer = Drawer(self.img, self.DEFAULT_CANVAS_COLOR)
         for y in range(self.W_SIZE):
             drawer.draw_line(0, self.W_SIZE, y)

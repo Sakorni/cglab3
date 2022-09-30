@@ -77,7 +77,8 @@ class Drawer:
     def set_pixel(self, x: int, y: int, b: float = 1.0):
         x = int(x)
         y = int(y)
-        new_color = [round(self.color[0][i] * b) for i in range(3)]
+        new_color = [round(self.color[0][i] * (1 - b) + 255 * (b))
+                     for i in range(3)]
         new_color = color_from_rgb(new_color)
         self.canvas.put(new_color, (x, y))
 

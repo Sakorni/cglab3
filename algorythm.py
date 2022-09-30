@@ -105,8 +105,8 @@ class Booba:
 
     def ultraright_wu_line(self, color: tuple[tuple[int], str], x1: int, y1: int, x2: int, y2: int) -> None:
         self.color_analyzer.set_analyzed_color(color)
-        new_color = self.color_analyzer.get_inverted_color()
-        drawer = Drawer(self.canvas, new_color)
+        #new_color = self.color_analyzer.get_inverted_color()
+        drawer = Drawer(self.canvas, color)
         dx = x2 - x1
         dy = y2 - y1
         y_domination = abs(dy) > abs(dx)
@@ -124,14 +124,14 @@ class Booba:
         x = x1
         if (y_domination):
             for i in range(round(dx)):
-                drawer.set_pixel(round(y), x, y % 1)
-                drawer.set_pixel(round(y)-sign_y, x, 1 - y % 1)
+                drawer.set_pixel(int(y)+sign_y, x, 1 - y % 1)
+                drawer.set_pixel(int(y), x, y % 1)
                 y += gradient
                 x += sign_x
         else:
             for i in range(round(dx)):
-                drawer.set_pixel(x, round(y), y % 1)
-                drawer.set_pixel(x, round(y)-sign_y, 1 - y % 1)
+                drawer.set_pixel(x, int(y)+sign_y, y % 1)
+                drawer.set_pixel(x, int(y), 1 - y % 1)
                 y += gradient
                 x += sign_x
 
